@@ -1,0 +1,237 @@
+{
+  "users": [
+    {
+      "id": "admin",
+      "name": "Platform Owner",
+      "email": "owner@skillnexus.com",
+      "role": "OWNER",
+      "skillsOffered": [],
+      "skillsWanted": [],
+      "matchedSwaps": [],
+      "completedCourses": []
+    },
+    {
+      "id": "u1",
+      "name": "Alice Johnson",
+      "email": "alice@example.com",
+      "role": "USER",
+      "skillsOffered": [
+        "react",
+        "design"
+      ],
+      "skillsWanted": [
+        "python"
+      ],
+      "matchedSwaps": [],
+      "completedCourses": []
+    },
+    {
+      "id": "u2",
+      "name": "Bob Smith",
+      "email": "bob@example.com",
+      "role": "USER",
+      "skillsOffered": [
+        "python",
+        "marketing",
+        "java"
+      ],
+      "skillsWanted": [
+        "react",
+        "css"
+      ],
+      "matchedSwaps": [],
+      "completedCourses": []
+    },
+    {
+      "id": "u3",
+      "name": "Charlie Brown",
+      "email": "charlie@example.com",
+      "role": "USER",
+      "skillsOffered": [
+        "public_speaking",
+        "html",
+        "css"
+      ],
+      "skillsWanted": [
+        "design",
+        "java"
+      ],
+      "matchedSwaps": [],
+      "completedCourses": []
+    },
+    {
+      "id": "u4",
+      "name": "Diana Prince",
+      "email": "diana@example.com",
+      "role": "USER",
+      "skillsOffered": [
+        "java",
+        "marketing"
+      ],
+      "skillsWanted": [
+        "python",
+        "react"
+      ],
+      "matchedSwaps": [],
+      "completedCourses": []
+    },
+    {
+      "id": "u_1764490673026",
+      "name": "Rohit",
+      "email": "rohit@gmail.com",
+      "role": "USER",
+      "skillsOffered": [
+        "python"
+      ],
+      "skillsWanted": [
+        "java"
+      ],
+      "matchedSwaps": [],
+      "completedCourses": []
+    },
+    {
+      "id": "u_1764490702283",
+      "name": "Virat",
+      "email": "virat@gmail.com",
+      "role": "USER",
+      "skillsOffered": [
+        "java"
+      ],
+      "skillsWanted": [
+        "python"
+      ],
+      "matchedSwaps": [],
+      "completedCourses": []
+    }
+
+    
+  ],
+  "resources": [
+    {
+      "id": "res1",
+      "skillId": "react",
+      "title": "Advanced React Patterns PDF",
+      "type": "PDF",
+      "url": "https://example.com/react-patterns.pdf",
+      "uploadedBy": "admin"
+    },
+    {
+      "id": "res2",
+      "skillId": "react",
+      "title": "React Hooks Deep Dive",
+      "type": "VIDEO",
+      "url": "https://example.com/react-hooks",
+      "uploadedBy": "admin"
+    },
+    {
+      "id": "res3",
+      "skillId": "python",
+      "title": "FastAPI Documentation",
+      "type": "LINK",
+      "url": "https://fastapi.tiangolo.com",
+      "uploadedBy": "admin"
+    },
+    {
+      "id": "res4",
+      "skillId": "design",
+      "title": "Figma Masterclass",
+      "type": "VIDEO",
+      "url": "https://example.com/figma-masterclass",
+      "uploadedBy": "admin"
+    },
+    {
+      "id": "res5",
+      "skillId": "java",
+      "title": "Java Fundamentals Guide",
+      "type": "PDF",
+      "url": "https://example.com/java-guide.pdf",
+      "uploadedBy": "admin"
+    },
+    {
+      "id": "res6",
+      "skillId": "html",
+      "title": "HTML5 Complete Tutorial",
+      "type": "VIDEO",
+      "url": "https://example.com/html5-tutorial",
+      "uploadedBy": "admin"
+    },
+    {
+      "id": "res7",
+      "skillId": "css",
+      "title": "CSS Grid & Flexbox Masterclass",
+      "type": "VIDEO",
+      "url": "https://example.com/css-masterclass",
+      "uploadedBy": "admin"
+    },
+    {
+      "id": "res8",
+      "skillId": "marketing",
+      "title": "Digital Marketing Fundamentals",
+      "type": "PDF",
+      "url": "https://example.com/marketing.pdf",
+      "uploadedBy": "admin"
+    },
+    {
+      "id": "res9",
+      "skillId": "public_speaking",
+      "title": "Public Speaking Masterclass",
+      "type": "VIDEO",
+      "url": "https://example.com/public-speaking",
+      "uploadedBy": "admin"
+    }
+  ],
+  "swaps": [
+    {
+      "id": "1764490707857",
+      "requesterId": "u_1764490702283",
+      "targetUserId": "u_1764490673026",
+      "skillId": "python",
+      "status": "ACCEPTED",
+      "timestamp": 1764490707857
+    },
+    {
+      "id": "1764490733736",
+      "requesterId": "u_1764490673026",
+      "targetUserId": "u_1764490702283",
+      "skillId": "java",
+      "status": "ACCEPTED",
+      "timestamp": 1764490733736
+    },
+    {
+      "id": "1764490791072",
+      "requesterId": "u_1764490702283",
+      "targetUserId": "u1",
+      "skillId": "react",
+      "status": "PENDING",
+      "timestamp": 1764490791072
+    },
+    {
+      "id": "1764490793256",
+      "requesterId": "u_1764490702283",
+      "targetUserId": "u1",
+      "skillId": "design",
+      "status": "PENDING",
+      "timestamp": 1764490793256
+    }
+  ],
+  "chats": [
+    {
+      "id": "msg_1764490769512",
+      "swapId": "1764490707857",
+      "senderId": "u_1764490702283",
+      "senderName": "Virat",
+      "message": "heyy",
+      "timestamp": 1764490769512
+    }
+  ],
+  "current_user": {
+    "id": "admin",
+    "name": "Platform Owner",
+    "email": "owner@skillnexus.com",
+    "role": "OWNER",
+    "skillsOffered": [],
+    "skillsWanted": [],
+    "matchedSwaps": [],
+    "completedCourses": []
+  }
+}
