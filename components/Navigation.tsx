@@ -34,7 +34,8 @@ export const Navigation: React.FC<NavigationProps> = ({ user, onLogout, currentP
                     { key: 'swap', label: 'Skill Swap' },
                     { key: 'messages', label: '💬 Messages' },
                     { key: 'statistics', label: '📊 Statistics' },
-                    { key: 'resources', label: 'My Learning' }
+                    { key: 'resources', label: 'My Learning' },
+                    { key: 'about', label: 'About' }
                   ].map((page) => (
                     <button 
                       key={page.key}
@@ -89,12 +90,20 @@ export const Navigation: React.FC<NavigationProps> = ({ user, onLogout, currentP
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => onNavigate('login')}
-                className="bg-white text-indigo-600 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-white/30 transition-all duration-300 hover:scale-105"
-              >
-                Login
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => onNavigate('about')}
+                  className="text-sm text-white/90 px-3 py-2 rounded hover:bg-white/10 transition-colors"
+                >
+                  About
+                </button>
+                <button
+                  onClick={() => onNavigate('login')}
+                  className="bg-white text-indigo-600 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-white/30 transition-all duration-300 hover:scale-105"
+                >
+                  Login
+                </button>
+              </div>
             )}
           </div>
         </div>

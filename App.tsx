@@ -8,6 +8,7 @@ import { Resources } from './pages/Resources';
 import { Messages } from './pages/Messages';
 import { Statistics } from './pages/Statistics';
 import { mockService } from './services/mockService';
+import { About } from './pages/About';
 import { User } from './types';
 
 function App() {
@@ -90,6 +91,8 @@ function App() {
         return user ? <Statistics /> : <Login onLogin={handleLogin} />;
       case 'resources':
         return user ? <Resources user={user} /> : <Login onLogin={handleLogin} />;
+      case 'about':
+        return <About onNavigate={setCurrentPage} />;
       default:
         return <Home onNavigate={setCurrentPage} />;
     }

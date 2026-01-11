@@ -95,6 +95,22 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+        {/* Creators Credit */}
+        <div className="py-8 bg-transparent">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <div className="text-sm text-slate-500 dark:text-slate-400 mb-2">Created by</div>
+              <div className="flex items-center justify-center gap-3">
+                <span className="creator-item text-sm font-semibold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Deep</span>
+                <span className="text-slate-300">•</span>
+                <span className="creator-item text-sm font-semibold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Tejas</span>
+                <span className="text-slate-300">•</span>
+                <span className="creator-item text-sm font-semibold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Gaurav</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <style>{`\n        @keyframes sn_fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }\n        .creator-item { opacity: 0; display: inline-block; animation: sn_fadeUp 600ms ease forwards; }\n        .creator-item:nth-child(1) { animation-delay: 120ms; }\n        .creator-item:nth-child(3) { animation-delay: 320ms; }\n        .creator-item:nth-child(5) { animation-delay: 520ms; }\n        .creator-item:hover { transform: translateY(-3px); transition: transform 180ms ease; }\n      `}</style>
     </div>
   );
 };

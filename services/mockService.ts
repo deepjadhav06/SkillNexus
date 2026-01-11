@@ -6,7 +6,7 @@ const RESOURCES_KEY = 'skillnexus_resources';
 const SWAPS_KEY = 'skillnexus_swaps';
 const CURRENT_USER_KEY = 'skillnexus_current_user';
 const CHATS_KEY = 'skillnexus_chats';
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = (import.meta.env?.VITE_API_BASE as string) || 'http://localhost:8000/api';
 
 // Initialize Mock Data
 const initData = () => {
