@@ -8,23 +8,52 @@ const CURRENT_USER_KEY = 'skillnexus_current_user';
 const CHATS_KEY = 'skillnexus_chats';
 const API_BASE = (import.meta.env?.VITE_API_BASE as string) || 'http://localhost:8000/api';
 
-// Initialize Mock Data
-const initData = () => {
-  if (!localStorage.getItem(USERS_KEY)) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(MOCK_USERS));
-  }
-  if (!localStorage.getItem(RESOURCES_KEY)) {
-    localStorage.setItem(RESOURCES_KEY, JSON.stringify(MOCK_RESOURCES));
-  }
-  if (!localStorage.getItem(SWAPS_KEY)) {
-    localStorage.setItem(SWAPS_KEY, JSON.stringify([]));
-  }
-  if (!localStorage.getItem(CHATS_KEY)) {
-    localStorage.setItem(CHATS_KEY, JSON.stringify([]));
+// Initialize Data - BACKEND IS SOURCE OF TRUTH
+// Only use mock data if localStorage is empty and backend is unavailable
+const initData = async () => {
+  try {
+    // Try to get backend data first
+    const backendUsers = await tryFetch(`${API_BASE}/users`);
+    const backendResources = await tryFetch(`${API_BASE}/resources`);
+    
+    if (backendUsers) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(backendUsers));
+    } else if (!localStorage.getItem(USERS_KEY)) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(MOCK_USERS));
+    }
+    
+    if (backendResources) {
+      localStorage.setItem(RESOURCES_KEY, JSON.stringify(backendResources));
+    } else if (!localStorage.getItem(RESOURCES_KEY)) {
+      localStorage.setItem(RESOURCES_KEY, JSON.stringify(MOCK_RESOURCES));
+    }
+    
+    if (!localStorage.getItem(SWAPS_KEY)) {
+      localStorage.setItem(SWAPS_KEY, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(CHATS_KEY)) {
+      localStorage.setItem(CHATS_KEY, JSON.stringify([]));
+    }
+  } catch (e) {
+    console.warn('Error initializing data:', e);
+    // Fallback to mock data if nothing is in localStorage
+    if (!localStorage.getItem(USERS_KEY)) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(MOCK_USERS));
+    }
+    if (!localStorage.getItem(RESOURCES_KEY)) {
+      localStorage.setItem(RESOURCES_KEY, JSON.stringify(MOCK_RESOURCES));
+    }
+    if (!localStorage.getItem(SWAPS_KEY)) {
+      localStorage.setItem(SWAPS_KEY, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(CHATS_KEY)) {
+      localStorage.setItem(CHATS_KEY, JSON.stringify([]));
+    }
   }
 };
 
-initData();
+// Initialize synchronously with async support
+initData().catch(e => console.warn('Initialization error:', e));
 
 // Helper to try backend first, fallback to localStorage
 const tryFetch = async (url: string, options?: RequestInit) => {
@@ -431,5 +460,163 @@ export const mockService = {
         timestamp: lastChat?.timestamp || swap.timestamp,
       };
     });
+  },
+
+  getSkills: async () => {
+    // Try backend first
+    const backendSkills = await tryFetch(`${API_BASE}/skills`);
+    if (backendSkills) {
+      return backendSkills;
+    }
+
+    // Fallback to constants
+    const { SKILLS } = await import('../constants');
+    return SKILLS;
+  },
+
+  getSkillById: async (skillId: string) => {
+    // Try backend first
+    const backendSkill = await tryFetch(`${API_BASE}/skills/${skillId}`);
+    if (backendSkill) {
+      return backendSkill;
+    }
+
+    // Fallback to constants
+    const { SKILLS } = await import('../constants');
+    return SKILLS.find(s => s.id === skillId) || null;
+  },
+
+  getSkillQuiz: async (skillId: string) => {
+    // Try backend first
+    const backendQuiz = await tryFetch(`${API_BASE}/skills/${skillId}/quiz`);
+    if (backendQuiz) {
+      return backendQuiz;
+    }
+    
+    // Fallback to mock quiz data
+    const mockQuizzes: Record<string, any[]> = {
+      python: [
+        { id: 'q1', question: 'What is the correct way to create a function in Python?', options: ['func myFunc() {}', 'def myFunc():', 'function myFunc() {}', 'define myFunc():'], correctAnswer: 1 },
+        { id: 'q2', question: 'Which of the following is a mutable data type in Python?', options: ['tuple', 'string', 'list', 'frozenset'], correctAnswer: 2 },
+        { id: 'q3', question: 'What does the "len()" function do?', options: ['Returns length of object', 'Creates a new list', 'Converts to string', 'Checks if object exists'], correctAnswer: 0 },
+        { id: 'q4', question: 'How do you import a module in Python?', options: ['include module', 'import module', 'require module', 'use module'], correctAnswer: 1 },
+        { id: 'q5', question: 'What is the purpose of the "self" parameter in Python classes?', options: ['Define static variables', 'Reference the instance of the class', 'Create private variables', 'Define class methods'], correctAnswer: 1 }
+      ],
+      java: [
+        { id: 'q1', question: 'What is the entry point for a Java application?', options: ['main()', 'start()', 'init()', 'run()'], correctAnswer: 0 },
+        { id: 'q2', question: 'Which keyword is used for inheritance in Java?', options: ['inherit', 'extends', 'implements', 'override'], correctAnswer: 1 },
+        { id: 'q3', question: 'What is the difference between "==" and "equals()" in Java?', options: ['No difference', '== compares reference, equals() compares content', '== is faster', 'equals() is for strings only'], correctAnswer: 1 },
+        { id: 'q4', question: 'Which access modifier is most restrictive?', options: ['public', 'protected', 'private', 'default'], correctAnswer: 2 },
+        { id: 'q5', question: 'What is the purpose of the "static" keyword?', options: ['Prevents change', 'Creates class-level members', 'Improves performance', 'Enables inheritance'], correctAnswer: 1 }
+      ],
+      javascript: [
+        { id: 'q1', question: 'What is the difference between "let" and "var" in JavaScript?', options: ['No difference', 'let is block-scoped, var is function-scoped', 'var is faster', 'let is older'], correctAnswer: 1 },
+        { id: 'q2', question: 'What does "this" refer to in JavaScript?', options: ['Global object', 'Current object context', 'Previous function', 'Parent element'], correctAnswer: 1 },
+        { id: 'q3', question: 'Which method is used to parse JSON?', options: ['parseJSON()', 'JSON.parse()', 'parse()', 'stringToObject()'], correctAnswer: 1 },
+        { id: 'q4', question: 'What is a closure in JavaScript?', options: ['A function that ends', 'A function with access to outer scope variables', 'A closed loop', 'An error state'], correctAnswer: 1 },
+        { id: 'q5', question: 'What does "async" keyword do?', options: ['Makes function asynchronous', 'Creates a promise', 'Enables async/await syntax', 'All of the above'], correctAnswer: 3 }
+      ],
+      react: [
+        { id: 'q1', question: 'What is the purpose of hooks in React?', options: ['Connect to HTML', 'Manage state in functional components', 'Handle errors', 'Create CSS styles'], correctAnswer: 1 },
+        { id: 'q2', question: 'Which hook is used to manage component state?', options: ['useContext', 'useState', 'useEffect', 'useReducer'], correctAnswer: 1 },
+        { id: 'q3', question: 'What is the virtual DOM?', options: ['Hidden DOM', 'In-memory representation of the real DOM', 'A library', 'CSS framework'], correctAnswer: 1 },
+        { id: 'q4', question: 'When does useEffect run?', options: ['Only once', 'Before render', 'After every render', 'Both B and C'], correctAnswer: 2 },
+        { id: 'q5', question: 'What is prop drilling?', options: ['Drilling into HTML', 'Passing props through multiple levels', 'Creating new props', 'Props management'], correctAnswer: 1 }
+      ],
+      html: [
+        { id: 'q1', question: 'What does HTML stand for?', options: ['Hypertext Markup Language', 'High Tech Modern Language', 'Home Tool Markup Language', 'Hyperlinks and Text Markup Language'], correctAnswer: 0 },
+        { id: 'q2', question: 'Which tag defines a hyperlink?', options: ['<link>', '<a>', '<href>', '<url>'], correctAnswer: 1 },
+        { id: 'q3', question: 'What is the purpose of the <meta> tag?', options: ['Define styles', 'Provide metadata about document', 'Create menus', 'Link external files'], correctAnswer: 1 },
+        { id: 'q4', question: 'Which tag is used for the largest heading?', options: ['<h6>', '<heading>', '<h1>', '<header>'], correctAnswer: 2 },
+        { id: 'q5', question: 'What does the "alt" attribute in <img> do?', options: ['Alternate image', 'Alternative text if image fails', 'Image alignment', 'Image alternative size'], correctAnswer: 1 }
+      ],
+      css: [
+        { id: 'q1', question: 'What does CSS stand for?', options: ['Computer Style Sheets', 'Cascading Style Sheets', 'Creative Style System', 'Coded Style Sheets'], correctAnswer: 1 },
+        { id: 'q2', question: 'Which property changes text color?', options: ['text-color', 'color', 'font-color', 'letter-color'], correctAnswer: 1 },
+        { id: 'q3', question: 'What is the CSS box model?', options: ['CSS file format', 'Margin, Border, Padding, Content', 'Grid system', 'Animation model'], correctAnswer: 1 },
+        { id: 'q4', question: 'Which selector has highest specificity?', options: ['Element selector', 'Class selector', 'ID selector', 'Universal selector'], correctAnswer: 2 },
+        { id: 'q5', question: 'What does "display: flex" do?', options: ['Hides element', 'Creates flexible layout container', 'Flexes animation', 'Flexible font'], correctAnswer: 1 }
+      ],
+      design: [
+        { id: 'q1', question: 'What is UX design?', options: ['User Experience design', 'User Extra design', 'Utility Extension', 'Unique XML'], correctAnswer: 0 },
+        { id: 'q2', question: 'What is the purpose of wireframes?', options: ['Final design', 'Basic layout blueprint', 'Color scheme', 'Marketing materials'], correctAnswer: 1 },
+        { id: 'q3', question: 'Which principle focuses on consistency?', options: ['Contrast', 'Gestalt principle', 'Design system', 'Color theory'], correctAnswer: 2 },
+        { id: 'q4', question: 'What is accessibility in design?', options: ['Easy access to code', 'Ensuring design is usable by everyone', 'Simple design', 'Fast loading'], correctAnswer: 1 },
+        { id: 'q5', question: 'What is a user persona?', options: ['Real user', 'Fictional representation of target user', 'User profile data', 'User journey'], correctAnswer: 1 }
+      ]
+    };
+    
+    return mockQuizzes[skillId] || [];
+  },
+
+  submitQuiz: async (userId: string, skillId: string, answers: number[]) => {
+    // Try backend first
+    const backendResult = await tryFetch(`${API_BASE}/quiz/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, skillId, answers })
+    });
+
+    if (backendResult) {
+      return backendResult;
+    }
+
+    // Fallback: simple scoring
+    const quiz = await mockService.getSkillQuiz(skillId);
+    let correct = 0;
+    answers.forEach((answer, i) => {
+      if (quiz[i] && answer === quiz[i].correctAnswer) {
+        correct++;
+      }
+    });
+
+    const score = (correct / quiz.length) * 100;
+    if (score >= 70) {
+      const users: User[] = await mockService.getUsers();
+      const user = users.find(u => u.id === userId);
+      const skills = await mockService.getSkills();
+      const skill = skills.find(s => s.id === skillId);
+
+      const certificate = {
+        id: `cert_${userId}_${skillId}_${Date.now()}`,
+        userId,
+        userName: user?.name || 'User',
+        skillId,
+        skillName: skill?.name || 'Unknown Skill',
+        issuedDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+        certificateId: `CERT-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        score: Math.round(score)
+      };
+
+      return {
+        score: Math.round(score),
+        passed: true,
+        certificate
+      };
+    }
+
+    return {
+      score: Math.round(score),
+      passed: false,
+      message: 'Score must be 70% or higher to earn a certificate. Try again!'
+    };
+  },
+
+  getCertificates: async (userId?: string) => {
+    // Try backend first
+    const url = userId ? `${API_BASE}/certificates?userId=${userId}` : `${API_BASE}/certificates`;
+    const backendCerts = await tryFetch(url);
+    if (backendCerts) {
+      return backendCerts;
+    }
+    return [];
+  },
+
+  getCertificateById: async (certId: string) => {
+    const backendCert = await tryFetch(`${API_BASE}/certificates/${certId}`);
+    if (backendCert) {
+      return backendCert;
+    }
+    return null;
   }
 };

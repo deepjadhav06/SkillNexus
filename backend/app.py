@@ -6,6 +6,7 @@ from typing import List, Optional
 import json
 import threading
 import os
+import shutil
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
@@ -45,13 +46,37 @@ def read_data():
     with lock:
         if not os.path.exists(DATA_FILE):
             init_data()
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # Validate data has required fields
+                if not data or not isinstance(data, dict):
+                    init_data()
+                    with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                return data
+        except (json.JSONDecodeError, IOError):
+            init_data()
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
 
 def write_data(data):
     with lock:
-        with open(DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2)
+        try:
+            # Create backup before writing
+            if os.path.exists(DATA_FILE):
+                backup_file = DATA_FILE + '.backup'
+                shutil.copy2(DATA_FILE, backup_file)
+            
+            with open(DATA_FILE, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            print(f"Error writing data: {e}")
+            # Try to restore from backup
+            backup_file = DATA_FILE + '.backup'
+            if os.path.exists(backup_file):
+                shutil.copy2(backup_file, DATA_FILE)
+            raise
 
 def init_data():
     default_data = {
@@ -166,6 +191,16 @@ class ChatMessage(BaseModel):
     senderName: str
     message: str
     timestamp: int
+
+class Certificate(BaseModel):
+    id: str
+    userId: str
+    userName: str
+    skillId: str
+    skillName: str
+    issuedDate: str
+    certificateId: str
+    score: Optional[int] = None
 
 # ===== USER ENDPOINTS =====
 @app.get('/api/users', response_model=List[User])
@@ -295,6 +330,21 @@ def delete_resource(res_id: str):
     write_data(data)
     return { 'ok': True }
 
+# ===== SKILLS ENDPOINTS =====
+@app.get('/api/skills')
+def get_skills():
+    data = read_data()
+    return data.get('skills', [])
+
+@app.get('/api/skills/{skill_id}')
+def get_skill(skill_id: str):
+    data = read_data()
+    skills = data.get('skills', [])
+    skill = next((s for s in skills if s['id'] == skill_id), None)
+    if not skill:
+        raise HTTPException(status_code=404, detail='Skill not found')
+    return skill
+
 # ===== SWAP ENDPOINTS =====
 @app.get('/api/swaps', response_model=List[SwapRequest])
 def get_swaps():
@@ -339,6 +389,97 @@ def post_chat(c: ChatMessage):
     data['chats'] = chats
     write_data(data)
     return c
+
+# ===== QUIZ ENDPOINTS =====
+@app.get('/api/skills/{skill_id}/quiz')
+def get_skill_quiz(skill_id: str):
+    data = read_data()
+    skills = data.get('skills', [])
+    skill = next((s for s in skills if s['id'] == skill_id), None)
+    if not skill:
+        raise HTTPException(status_code=404, detail='Skill not found')
+    return skill.get('quiz', [])
+
+@app.post('/api/quiz/submit')
+def submit_quiz(submission: dict):
+    userId = submission.get('userId')
+    skillId = submission.get('skillId')
+    answers = submission.get('answers', [])
+    
+    data = read_data()
+    skills = data.get('skills', [])
+    skill = next((s for s in skills if s['id'] == skillId), None)
+    
+    if not skill:
+        raise HTTPException(status_code=404, detail='Skill not found')
+    
+    quiz = skill.get('quiz', [])
+    if not quiz:
+        raise HTTPException(status_code=400, detail='No quiz found for this skill')
+    
+    # Calculate score
+    correct_count = 0
+    for i, answer in enumerate(answers):
+        if i < len(quiz) and answer == quiz[i].get('correctAnswer'):
+            correct_count += 1
+    
+    score = (correct_count / len(quiz)) * 100 if quiz else 0
+    
+    # If score is 70% or higher, create certificate
+    if score >= 70:
+        users = data.get('users', [])
+        user = next((u for u in users if u['id'] == userId), None)
+        if user:
+            cert_id = f"CERT_{userId}_{skillId}_{int(datetime.utcnow().timestamp())}"
+            certificate = {
+                'id': cert_id,
+                'userId': userId,
+                'userName': user.get('name'),
+                'skillId': skillId,
+                'skillName': skill.get('name'),
+                'issuedDate': datetime.utcnow().strftime('%B %d, %Y'),
+                'certificateId': cert_id.split('_')[2],
+                'score': int(score)
+            }
+            
+            certificates = data.get('certificates', [])
+            certificates.append(certificate)
+            data['certificates'] = certificates
+            
+            # Add to completed courses
+            if skillId not in user.get('completedCourses', []):
+                user['completedCourses'].append(skillId)
+                write_data(data)
+            
+            return {
+                'score': int(score),
+                'passed': True,
+                'certificate': certificate
+            }
+    
+    return {
+        'score': int(score),
+        'passed': False,
+        'message': 'Score must be 70% or higher to earn a certificate. Try again!'
+    }
+
+# ===== CERTIFICATE ENDPOINTS =====
+@app.get('/api/certificates')
+def get_certificates(userId: Optional[str] = None):
+    data = read_data()
+    certificates = data.get('certificates', [])
+    if userId:
+        return [c for c in certificates if c['userId'] == userId]
+    return certificates
+
+@app.get('/api/certificates/{cert_id}')
+def get_certificate(cert_id: str):
+    data = read_data()
+    certificates = data.get('certificates', [])
+    cert = next((c for c in certificates if c['id'] == cert_id), None)
+    if not cert:
+        raise HTTPException(status_code=404, detail='Certificate not found')
+    return cert
 
 # ===== HEALTH CHECK =====
 @app.get('/api/health')

@@ -9,6 +9,24 @@ export interface Skill {
   category: string;
 }
 
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+}
+
+export interface Certificate {
+  id: string;
+  userId: string;
+  userName: string;
+  skillId: string;
+  skillName: string;
+  issuedDate: string;
+  certificateId: string;
+  score?: number;
+}
+
 export interface Resource {
   id: string;
   skillId: string;

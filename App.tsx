@@ -15,29 +15,46 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState('home');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
-    // Check for existing session
-    const initUser = async () => {
-      const currentUser = await mockService.getCurrentUser();
-      if (currentUser) {
-        setUser(currentUser);
-        setCurrentPage('dashboard');
-      }
-    };
-    
-    initUser();
+    try {
+      console.log('🚀 App initializing...');
+      
+      // Check for existing session
+      const initUser = async () => {
+        try {
+          console.log('👤 Checking for existing user...');
+          const currentUser = await mockService.getCurrentUser();
+          console.log('✅ Current user:', currentUser);
+          if (currentUser) {
+            setUser(currentUser);
+            setCurrentPage('dashboard');
+          }
+        } catch (err) {
+          console.error('❌ Error getting current user:', err);
+        }
+      };
+      
+      initUser();
 
-    // Initialize Theme
-    const savedTheme = localStorage.getItem('skillnexus_theme') as 'light' | 'dark';
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
-    } else {
-      // Default to dark theme
-      setTheme('dark');
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('skillnexus_theme', 'dark');
+      // Initialize Theme
+      const savedTheme = localStorage.getItem('skillnexus_theme') as 'light' | 'dark';
+      if (savedTheme) {
+        setTheme(savedTheme);
+        document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+      } else {
+        // Default to dark theme
+        setTheme('dark');
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('skillnexus_theme', 'dark');
+      }
+
+      console.log('✅ App initialization complete');
+      setAppReady(true);
+    } catch (err) {
+      console.error('❌ App initialization error:', err);
+      setAppReady(true); // Still mark as ready to show the app
     }
   }, []);
 
@@ -51,9 +68,17 @@ function App() {
   // Sync backend data once on app load
   useEffect(() => {
     const syncAllData = async () => {
-      await mockService.getUsers();
-      await mockService.getResources();
-      await mockService.getSwapRequests();
+      try {
+        console.log('🔄 Syncing backend data...');
+        await Promise.all([
+          mockService.getUsers().catch(e => console.warn('⚠️ Failed to sync users:', e)),
+          mockService.getResources().catch(e => console.warn('⚠️ Failed to sync resources:', e)),
+          mockService.getSwapRequests().catch(e => console.warn('⚠️ Failed to sync swaps:', e))
+        ]);
+        console.log('✅ Backend data synced');
+      } catch (err) {
+        console.error('❌ Sync data error:', err);
+      }
     };
     syncAllData();
   }, []);
@@ -78,60 +103,43 @@ function App() {
   };
 
   const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return <Home onNavigate={setCurrentPage} />;
-      case 'login':
-        return <Login onLogin={handleLogin} />;
-      case 'dashboard':
-        return user ? <Dashboard user={user} /> : <Login onLogin={handleLogin} />;
-      case 'swap':
-        return user ? <SkillSwap currentUser={user} onNavigate={setCurrentPage} /> : <Login onLogin={handleLogin} />;
-      case 'messages':
-        return user ? <Messages user={user} /> : <Login onLogin={handleLogin} />;
-      case 'statistics':
-        return user ? <Statistics /> : <Login onLogin={handleLogin} />;
-      case 'resources':
-        return user ? <Resources user={user} /> : <Login onLogin={handleLogin} />;
-      case 'about':
-        return <About onNavigate={setCurrentPage} />;
-      default:
-        return <Home onNavigate={setCurrentPage} />;
+    try {
+      console.log('📄 Rendering page:', currentPage);
+      switch (currentPage) {
+        case 'home':
+          return <Home onNavigate={setCurrentPage} />;
+        case 'login':
+          return <Login onLogin={handleLogin} />;
+        case 'dashboard':
+          return user ? <Dashboard user={user} /> : <Login onLogin={handleLogin} />;
+        case 'swap':
+          return user ? <SkillSwap currentUser={user} onNavigate={setCurrentPage} /> : <Login onLogin={handleLogin} />;
+        case 'messages':
+          return user ? <Messages user={user} /> : <Login onLogin={handleLogin} />;
+        case 'statistics':
+          return user ? <Statistics /> : <Login onLogin={handleLogin} />;
+        case 'resources':
+          return user ? <Resources user={user} /> : <Login onLogin={handleLogin} />;
+        case 'about':
+          return <About onNavigate={setCurrentPage} />;
+        default:
+          return <Home onNavigate={setCurrentPage} />;
+      }
+    } catch (err) {
+      console.error('❌ Error rendering page:', err);
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <p className="font-bold">Error rendering page</p>
+            <p>{err instanceof Error ? err.message : 'Unknown error'}</p>
+          </div>
+        </div>
+      );
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-200 relative">
-      {/* Sparkling Background */}
-      <div className="sparkles">
-        {[...Array(50)].map((_, i) => (
-          <div
-            key={i}
-            className="star"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 3 + 1}px`,
-              height: `${Math.random() * 3 + 1}px`,
-              animationDelay: `${Math.random() * 3}s`,
-            }}
-          />
-        ))}
-        {/* Shooting Stars */}
-        {[...Array(3)].map((_, i) => (
-          <div
-            key={`shooting-${i}`}
-            className="shooting-star"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 10 + 5}s`,
-              animationDuration: `${Math.random() * 5 + 8}s`,
-            }}
-          />
-        ))}
-      </div>
-      
       <Navigation 
         user={user} 
         onLogout={handleLogout} 

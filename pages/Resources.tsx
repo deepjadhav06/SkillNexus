@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { User, Resource, UserRole, SwapRequest } from '../types';
+import { User, Resource, UserRole, SwapRequest, Certificate as CertificateType } from '../types';
 import { mockService } from '../services/mockService';
 import { SKILLS } from '../constants';
-import { generateSkillQuiz } from '../services/geminiService';
+import { Quiz } from '../components/Quiz';
+import { Certificate } from '../components/Certificate';
 
 interface ResourcesProps {
   user: User;
@@ -12,12 +13,11 @@ export const Resources: React.FC<ResourcesProps> = ({ user }) => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [newRes, setNewRes] = useState({ title: '', url: '', skillId: SKILLS[0].id, type: 'PDF' as 'PDF' | 'LINK' | 'VIDEO' });
-  const [activeQuiz, setActiveQuiz] = useState<any>(null);
-  const [quizLoading, setQuizLoading] = useState(false);
-  const [quizAnswers, setQuizAnswers] = useState<number[]>([]);
-  const [certificateData, setCertificateData] = useState<{skill: string, date: string} | null>(null);
   const [mySwaps, setMySwaps] = useState<SwapRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showQuiz, setShowQuiz] = useState<{ skillId: string; skillName: string } | null>(null);
+  const [showCertificate, setShowCertificate] = useState<CertificateType | null>(null);
+  const [completedSkills, setCompletedSkills] = useState<string[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -26,9 +26,12 @@ export const Resources: React.FC<ResourcesProps> = ({ user }) => {
         const res = await mockService.getResources();
         const swaps = await mockService.getSwapRequests();
         const allUsers = await mockService.getUsers();
+        const certs = await mockService.getCertificates(user.id);
+        
         setResources(res);
         setMySwaps(swaps);
         setUsers(allUsers);
+        setCompletedSkills(certs.map((c: CertificateType) => c.skillId));
       } catch (err) {
         console.error('Error loading resources:', err);
       } finally {
@@ -36,7 +39,7 @@ export const Resources: React.FC<ResourcesProps> = ({ user }) => {
       }
     };
     loadData();
-  }, []);
+  }, [user.id]);
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,34 +67,15 @@ export const Resources: React.FC<ResourcesProps> = ({ user }) => {
     }
   };
 
-  const startCertification = async (skillId: string) => {
-    const skillName = SKILLS.find(s => s.id === skillId)?.name || skillId;
-    setQuizLoading(true);
-    const quiz = await generateSkillQuiz(skillName);
-    setActiveQuiz({ ...quiz, skillId, skillName });
-    setQuizAnswers(new Array(quiz.questions.length).fill(-1));
-    setQuizLoading(false);
+  const handleStartQuiz = (skillId: string, skillName: string) => {
+    setShowQuiz({ skillId, skillName });
   };
 
-  const submitQuiz = async () => {
-    if (!activeQuiz) return;
-    
-    let correct = 0;
-    activeQuiz.questions.forEach((q: any, idx: number) => {
-      if (q.correctAnswerIndex === quizAnswers[idx]) correct++;
-    });
-
-    if (correct === activeQuiz.questions.length) {
-      await mockService.completeCourse(user.id, activeQuiz.skillId);
-      setCertificateData({
-        skill: activeQuiz.skillName,
-        date: new Date().toLocaleDateString()
-      });
-      setActiveQuiz(null);
-    } else {
-      alert(`You got ${correct}/${activeQuiz.questions.length} correct. Try again to earn the certificate!`);
-      setActiveQuiz(null);
-    }
+  const handleQuizComplete = async () => {
+    // Reload certificates
+    const certs = await mockService.getCertificates(user.id);
+    setCompletedSkills(certs.map((c: CertificateType) => c.skillId));
+    setShowQuiz(null);
   };
 
   // Determine if a resource is locked for the current user
@@ -115,60 +99,15 @@ export const Resources: React.FC<ResourcesProps> = ({ user }) => {
     return { locked: true, unlockedBy: null };
   };
 
-  if (certificateData) {
+  if (showQuiz) {
     return (
-      <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-800 p-10 border-8 border-double border-indigo-200 dark:border-indigo-900 shadow-2xl text-center max-w-2xl w-full">
-            <h1 className="text-4xl font-serif text-indigo-900 dark:text-indigo-300 mb-4">Certificate of Completion</h1>
-            <p className="text-xl text-slate-600 dark:text-slate-400 mb-8">This certifies that</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white border-b-2 border-slate-300 dark:border-slate-600 inline-block px-8 pb-2 mb-8">{user.name}</p>
-            <p className="text-xl text-slate-600 dark:text-slate-400 mb-2">Has successfully demonstrated competency in</p>
-            <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-8">{certificateData.skill}</p>
-            <p className="text-sm text-slate-400">Date Issued: {certificateData.date}</p>
-            <button onClick={() => setCertificateData(null)} className="mt-8 text-indigo-600 dark:text-indigo-400 hover:underline">Close</button>
-        </div>
-      </div>
-    )
-  }
-
-  if (activeQuiz) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-8">
-         <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">Certification Quiz: {activeQuiz.skillName}</h2>
-         {activeQuiz.questions.map((q: any, idx: number) => (
-           <div key={idx} className="mb-6 bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
-             <p className="font-medium text-lg mb-4 text-slate-800 dark:text-slate-200">{idx + 1}. {q.question}</p>
-             <div className="space-y-2">
-               {q.options.map((opt: string, optIdx: number) => (
-                 <label key={optIdx} className="flex items-center space-x-3 cursor-pointer p-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700">
-                   <input 
-                    type="radio" 
-                    name={`q-${idx}`} 
-                    checked={quizAnswers[idx] === optIdx} 
-                    onChange={() => {
-                      const newAns = [...quizAnswers];
-                      newAns[idx] = optIdx;
-                      setQuizAnswers(newAns);
-                    }}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600"
-                   />
-                   <span className="text-slate-700 dark:text-slate-300">{opt}</span>
-                 </label>
-               ))}
-             </div>
-           </div>
-         ))}
-         <button onClick={submitQuiz} className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-indigo-700 shadow-md">Submit Quiz</button>
-      </div>
-    );
-  }
-
-  if (quizLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
-        <span className="ml-4 text-slate-600 dark:text-slate-400">Generating Quiz with Gemini...</span>
-      </div>
+      <Quiz 
+        skillId={showQuiz.skillId}
+        skillName={showQuiz.skillName}
+        userId={user.id}
+        onComplete={handleQuizComplete}
+        onClose={() => setShowQuiz(null)}
+      />
     );
   }
 
@@ -252,7 +191,7 @@ export const Resources: React.FC<ResourcesProps> = ({ user }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {resources.map(res => {
               const { locked, unlockedBy } = getUnlockInfo(res);
-              const isCompleted = user.completedCourses.includes(res.skillId);
+              const isCompleted = completedSkills.includes(res.skillId);
               const skillName = SKILLS.find(s => s.id === res.skillId)?.name;
 
               return (
@@ -313,11 +252,11 @@ export const Resources: React.FC<ResourcesProps> = ({ user }) => {
                          </div>
                     ) : (
                          <button 
-                            onClick={() => startCertification(res.skillId)}
+                            onClick={() => handleStartQuiz(res.skillId, skillName || '')}
                             disabled={locked}
                             className={`block w-full font-medium py-2 rounded transition-colors ${locked ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-700'}`}
                         >
-                            Get Certified
+                            Take Quiz & Get Certified
                         </button>
                     )}
                 </div>
