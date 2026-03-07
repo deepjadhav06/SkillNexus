@@ -1,11 +1,29 @@
 version: '3.8'
 services:
+  database:
+    image: postgres:16-alpine
+    container_name: skillnexus_db
+    environment:
+      POSTGRES_USER: skillnexus
+      POSTGRES_PASSWORD: skillnexus_dev_password
+      POSTGRES_DB: skillnexus
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
+    depends_on:
+      - database
+    environment:
+      - DATABASE_URL=postgresql://skillnexus:skillnexus_dev_password@database:5432/skillnexus
+      - VITE_API_BASE=http://localhost:8000/api
     restart: unless-stopped
 
   frontend:
@@ -19,3 +37,6 @@ services:
     environment:
       - VITE_API_BASE=http://backend:8000/api
     restart: unless-stopped
+
+volumes:
+  postgres_data:

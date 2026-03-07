@@ -13,4 +13,5 @@ WORKDIR /app/backend
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use app_db for PostgreSQL support (production)
+CMD ["uvicorn", "app_db:app", "--host", "0.0.0.0", "--port", "8000"]
